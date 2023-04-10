@@ -1,0 +1,5 @@
+test_soundscapes
+train_audio
+train_mel(dB,sr=32k,bin=128).pickle3
+ckpt/*
+.idea
