@@ -13,11 +13,11 @@ class MyDataset(Dataset):
         assert mode in ['train', 'test', 'val'], f'invalid mode {mode}!, mode must be [train | val | test]'
         self.mode = mode
 
-        self.sr = 32000
-        self.duration = 5
-        self.audio_length = self.duration * self.sr
+        self.sr = 32000  # test use only
+        self.duration = 5 # test use only
+        self.audio_length = self.duration * self.sr # test use only
 
-        self.name_label_2_int_label = load_pickle("name_label_2_int_label.pickle3")  # a dict which saves mapping from
+        # self.name_label_2_int_label = load_pickle("name_label_2_int_label.pickle3")  # a dict which saves mapping from
         # bird name to label index, can be generated using the code below:
         # bird_names, _ = np.unique(data['primary_label'], return_counts=True)
         # self.name_label_2_int_label = {}
@@ -39,12 +39,14 @@ class MyDataset(Dataset):
         if self.mode == 'train' or  self.mode == 'val':
             mel = self.data['mel'][index]
             mel = self.crop_or_pad(mel)
-            label = self.name_label_2_int_label[self.data['primary_label'][index]]  # 'bird name' -> idx
+            # label = self.name_label_2_int_label[self.data['primary_label'][index]]  # 'bird name' -> idx
+            label = torch.tensor(self.data['primary_label_idx'][index])
             label = torch.nn.functional.one_hot(label, num_classes=264).float()
             return mel, label
 
         elif self.mode == 'test':
             return self.read_file(self.data_test_df.loc[index, "path"])
+
 
     def __len__(self):
         if self.mode == 'train' or  self.mode == 'val':
