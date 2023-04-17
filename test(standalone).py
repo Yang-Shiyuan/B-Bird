@@ -8,9 +8,11 @@ import librosa
 import soundfile as sf
 from pathlib import Path
 import timm
+import pytorch_lightning as pl
+
 ## for local
 device = 'cpu'
-ckpt = "ckpt/tf_efficientnet_b2_ns_loss.ckpt"
+ckpt = "/home/yangshiyuan/Projects/birdclef-2023/ckpt/tf_efficientnet_b2_ns_loss-v13.ckpt"
 test_data_path = "test_soundscapes"
 name_label_2_int_label_pickle_path = "name_label_2_int_label.pickle3"
 bird_names_pickle_path = "bird_names.pickle3"
@@ -95,23 +97,26 @@ class MyTestDataset(Dataset):
 #         x = self.classifier(x)
 #         return x
 
-
-class MyModel(nn.Module):
+class MyModel(pl.LightningModule):
     def __init__(self,  num_classes=264):
         super().__init__()
         self.num_classes = num_classes
         self.backbone = timm.create_model("tf_efficientnet_b2_ns", pretrained=False)
+        self.num_classes = num_classes
+
         self.in_features = self.backbone.classifier.in_features
         self.backbone.classifier = nn.Sequential(
-            nn.Linear(self.in_features, num_classes)
+            nn.Linear(self.in_features, num_classes),
+            # nn.Dropout(0.4),
+            # nn.Linear(self.num_classes, num_classes)
         )
 
     def forward(self, images):
         logits = self.backbone(images)
         return logits
 
-my_model = MyModel(num_classes=264).to(device)
-my_model.load_state_dict(torch.load(ckpt, map_location='cpu'), strict=False)
+
+my_model = MyModel.load_from_checkpoint(ckpt, train_dataloader=None,validation_dataloader=None, strict=True).to(device)
 print(f"ckpt resumed from {ckpt}")
 my_model.eval()
 
@@ -127,11 +132,11 @@ test_dataset = MyTestDataset(data=df_test)
 ############################  Make Inference     ##################################
 
 predictions = []
-with torch.no_grad():
+with torch.no_grad(), torch.autocast('cpu'):
     for test_idx in range(len(test_dataset)):
         test_sample_np = test_dataset[test_idx]  # test_sample_np is an ogg's sliced mel images with the size of (120,128,313)
         test_sample_pt = torch.from_numpy(test_sample_np).to(device)  # numpy to torch
-        pred = my_model(test_sample_pt).sigmoid().detach().cpu().numpy()
+        pred = my_model(test_sample_pt).float().softmax(dim=1).detach().cpu().numpy()
         predictions.append(pred)
 
 
@@ -154,11 +159,13 @@ submission_df.to_csv('submission.csv',index=False)
 print("done")
 
 ''' sanity check
-import sklearn.metrics
+# lrap
+import sklearn.metrics, numpy as np
 pseudo_label = np.load("/home/yangshiyuan/Projects/birdclef-2023/test_soundscapes/pseudo_label.npy")
 avg_score = sklearn.metrics.label_ranking_average_precision_score(pseudo_label, predictions[0])
 print(avg_score)
 
+# padcmp
 pad=5
 cmap=sklearn.metrics.average_precision_score(
     np.concatenate([pseudo_label,np.ones((pad,264))]),
@@ -166,4 +173,11 @@ cmap=sklearn.metrics.average_precision_score(
     average='macro',
 )
 print(cmap)
+
+# show pred
+from skimage import io
+max_indices = np.argmax(pred, axis=1)
+result = np.zeros_like(pred)
+result[np.arange(result.shape[0]), max_indices] = 1
+io.imshow(result)
 '''

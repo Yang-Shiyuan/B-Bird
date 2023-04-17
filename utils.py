@@ -15,7 +15,7 @@ def load_pickle(fname):
 
 def get_audio_info(filepath):
     """Get some properties from  an audio file"""
-    # example: a = get_audio_info("/home/yangshiyuan/Projects/birdclef-2023/train_audio/abethr1/XC128013.ogg")
+    # example: a = get_audio_info("/home/yangshiyuan/Projects/birdclef-2023/train_audio/abethr1/XC_128013.ogg")
     with SoundFile(filepath) as f:
         sr = f.samplerate
         frames = f.frames

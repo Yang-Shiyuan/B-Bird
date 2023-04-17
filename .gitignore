@@ -1,4 +1,5 @@
 test_soundscapes
+val_soundscapes
 train_audio
 ckpt
 .idea
@@ -6,5 +7,8 @@ specs
 exp1
 wandb
 lightning_logs
+/imgs
+*.ogg
 
 *.pickle3
+*.pkl
