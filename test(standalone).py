@@ -12,7 +12,7 @@ import pytorch_lightning as pl
 
 ## for local
 device = 'cpu'
-ckpt = "/home/yangshiyuan/Projects/birdclef-2023/ckpt/tf_efficientnet_b2_ns_loss-v13.ckpt"
+ckpt = "/home/yangshiyuan/Projects/birdclef-2023/exp1/tf_efficientnet_b2_ns_loss-v10.ckpt"
 test_data_path = "test_soundscapes"
 name_label_2_int_label_pickle_path = "name_label_2_int_label.pickle3"
 bird_names_pickle_path = "bird_names.pickle3"
@@ -107,8 +107,8 @@ class MyModel(pl.LightningModule):
         self.in_features = self.backbone.classifier.in_features
         self.backbone.classifier = nn.Sequential(
             nn.Linear(self.in_features, num_classes),
-            # nn.Dropout(0.4),
-            # nn.Linear(self.num_classes, num_classes)
+            nn.Dropout(0.4),
+            nn.Linear(self.num_classes, num_classes)
         )
 
     def forward(self, images):
